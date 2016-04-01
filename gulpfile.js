@@ -71,7 +71,7 @@ gulp.task('scss', function() {
 // Gets .html and .nunjucks files in templates
 gulp.task('templates', function() {
     nunjucksRender.nunjucks.configure([source_path+'templates']);
-    $ret = gulp_source(source_path+'templates/**/*.+(html|nunjucks)')
+    $ret = gulp_source(source_path+'templates/**/*.+(html|njk)')
         .pipe(nunjucksRender());
     if (minify_html) {
         $ret.pipe(htmlmin({
