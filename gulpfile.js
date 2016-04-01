@@ -45,7 +45,7 @@ gulp.task('js', function() {
     if (minify_js) {
         $ret.pipe(uglify());
     }
-    return $ret.pipe(gulp.dest('js'));
+    return $ret.pipe(gulp.dest(output_path+'js/'));
 });
 
 // Compile sass into CSS
