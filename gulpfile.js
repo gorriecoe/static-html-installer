@@ -4,10 +4,10 @@ Configuration
 
 source_path = './source/';
 output_path = './output/';
-tinypng_apicode = 'naRxETuVW6StyRcH9pxAns9tfajYqa3W';
+tinypng_apicode = 'naRxEerrW6SgfdH9sdfns9tfajYqa3W';
 minify_img = true;
-minify_html = true;
-minify_css = true;
+minify_html = false;
+minify_css = false;
 minify_js = true;
 
 /*-------------------------------------------------------------------
@@ -15,15 +15,16 @@ Required plugins
 -------------------------------------------------------------------*/
 
 var gulp = require('gulp'),
-    watch = require('gulp-watch'),
-    plumber = require('gulp-plumber'),
+    htmlmin = require('gulp-htmlmin'),
     notify = require('gulp-notify'),
     nunjucksRender = require('gulp-nunjucks-render'),
-    uglify = require('gulp-uglify'),
-    htmlmin = require('gulp-htmlmin'),
-    tinypng = require('gulp-tinypng'),
+    plumber = require('gulp-plumber'),
+    prettify = require('gulp-prettify'),
     sass = require('gulp-sass'),
     sourcemaps = require('gulp-sourcemaps'),
+    tinypng = require('gulp-tinypng'),
+    uglify = require('gulp-uglify'),
+    watch = require('gulp-watch'),
     zip = require('gulp-zip');
 
 /*-------------------------------------------------------------------
@@ -32,7 +33,7 @@ Tasks
 
 // minifies images using tinypng
 gulp.task('img', function() {
-    $ret = gulp_source(source_path+'images/**/*.+(png|jpg)');
+    $ret = gulp_source(source_path+'img/**/*.+(png|jpg)');
     if (minify_img && typeof tinypng_apicode != 'undefined') {
         $ret.pipe(tinypng(tinypng_apicode));
     }
@@ -49,13 +50,14 @@ gulp.task('js', function() {
 });
 
 // Compile sass into CSS
-gulp.task('scss', function() {
+gulp.task('scss_compile', function() {
     if (minify_css) {
         css_output = 'compressed';
     } else {
         css_output = 'expanded';
     }
-    $ret = gulp_source(source_path+'scss/**/*.scss')
+    $ret = gulp.src(source_path+'scss/**/*.scss')
+        .pipe(plumber({errorHandler: notify.onError('Error: <%= error.message %>')}))
         .pipe(sourcemaps.init())
         .pipe(sass({
             errLogToConsole: true,
@@ -65,13 +67,19 @@ gulp.task('scss', function() {
             ]
         }))
         .pipe(sourcemaps.write());
-    return $ret.pipe(gulp.dest(output_path+'css/'));
+    $ret.pipe(gulp.dest(output_path+'css/'));
+    $ret.pipe(notify({ message: 'Compiled <%= file.relative %> style.' }));
+    return $ret;
+});
+
+gulp.task('scss', function () {
+  gulp.watch(source_path+'scss/**/*.scss', ['scss_compile']);
 });
 
 // Gets .html and .nunjucks files in templates
 gulp.task('templates', function() {
     nunjucksRender.nunjucks.configure([source_path+'templates']);
-    $ret = gulp_source(source_path+'templates/**/*.+(html|njk)')
+    $ret = gulp_source(source_path+'templates/**/*.html')
         .pipe(nunjucksRender());
     if (minify_html) {
         $ret.pipe(htmlmin({
@@ -81,6 +89,8 @@ gulp.task('templates', function() {
             minifyCSS: true,
             removeComments: true
         }));
+    }else{
+        $ret.pipe(prettify({indent_size: 2}));
     }
 
     return $ret.pipe(gulp.dest(output_path+'templates'));
@@ -105,7 +115,7 @@ gulp.task('zip', function() {
 });
 
 // set default actions to run all tasks listed above
-gulp.task('default', ['img','js','scss','templates','copy','zip']);
+gulp.task('default', ['img','js','scss','templates','copy']);
 
 // helper function to initiate a task
 function gulp_source(path){
